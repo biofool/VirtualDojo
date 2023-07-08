@@ -20,20 +20,37 @@ func main() {
 		log.Fatalf("Unable to create YouTube service: %v", err)
 	}
 
-	rename := &youtube.Video{
-		Id: "someid",
-		Snippet: &youtube.VideoSnippet{
-			Title:      "Test Title",
-			CategoryId: "27", // Education
-		},
-	}
-
-	call := service.Videos.Update("id,snippet", rename)
+	videoID := "someid"
+	call := service.Videos.List("snippet").Id(videoID)
 
 	response, err := call.Do()
 	if err != nil {
-		log.Fatalf("Error making YouTube API call: %v", err)
+		log.Fatalf("Error retrieving video details: %v", err)
 	}
 
-	fmt.Println(response.Snippet.Title)
+	if len(response.Items) == 0 {
+		log.Fatalf("Video with ID '%s' not found", videoID)
+	}
+
+	video := response.Items[0]
+	existingTitle := video.Snippet.Title
+
+	// Update video title and description
+	rename := &youtube.Video{
+		Id: videoID,
+		Snippet: &youtube.VideoSnippet{
+			Title:       existingTitle,
+			Description: existingTitle,
+			CategoryId:  "27", // Education
+		},
+	}
+
+	updateCall := service.Videos.Update("snippet", rename)
+
+	_, err = updateCall.Do()
+	if err != nil {
+		log.Fatalf("Error updating video details: %v", err)
+	}
+
+	fmt.Println("Video details updated successfully!")
 }
